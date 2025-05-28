@@ -1,0 +1,31 @@
+{
+  "name": "tele-bot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx src/main.ts",
+    "tiktok": "npx tsx src/tiktok.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@inquirer/prompts": "^7.5.3",
+    "chalk": "^5.4.1",
+    "follow-redirects": "^1.15.9",
+    "inquirer": "^6.5.2",
+    "inquirer-fuzzy-path": "^2.3.0",
+    "lodash": "^4.17.21",
+    "node-fetch": "^3.3.2",
+    "playwright": "^1.52.0",
+    "readline": "^1.3.0",
+    "redis": "^5.1.1",
+    "telegram": "^2.26.22",
+    "tiktok-scraper": "^1.4.36",
+    "tsc": "^2.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.23"
+  }
+}
