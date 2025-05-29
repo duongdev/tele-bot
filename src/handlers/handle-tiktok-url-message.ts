@@ -60,8 +60,9 @@ async function sendVideoToChat(
   retries = MAX_RETRIES
 ) {
   const { videoUrl, client, chatId, replyToMessage } = args;
+  let videoPath: string | undefined;
   try {
-    const videoPath = await downloadVideoFromTikTok(videoUrl);
+    videoPath = await downloadVideoFromTikTok(videoUrl);
     await client.sendFile(chatId, {
       file: videoPath,
       replyTo: replyToMessage,
@@ -76,6 +77,19 @@ async function sendVideoToChat(
   } catch (error) {
     logger.error(`Error sending video to chat`);
     console.error(error);
+
+    // It probably failed because of invalid file chunk.
+    // Try deleting the file and retrying.
+    if (videoPath) {
+      try {
+        unlinkSync(videoPath);
+      } catch (unlinkError) {
+        logger.error(
+          `Error deleting video file after send failure: ${unlinkError}`
+        );
+      }
+    }
+
     if (retries > 0) {
       logger.warn(`Retrying to send video... (${MAX_RETRIES - retries + 1})`);
       await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2 seconds before retrying
