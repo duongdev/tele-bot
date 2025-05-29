@@ -78,6 +78,7 @@ async function sendVideoToChat(
     console.error(error);
     if (retries > 0) {
       logger.warn(`Retrying to send video... (${MAX_RETRIES - retries + 1})`);
+      await new Promise((resolve) => setTimeout(resolve, 2000)); // Wait for 2 seconds before retrying
       return sendVideoToChat(args, retries - 1);
     } else {
       logger.error("Failed to send video after multiple attempts.");

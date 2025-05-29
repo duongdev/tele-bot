@@ -58,7 +58,7 @@ export async function getVideoData(videoUrl: string) {
   const videoData = await getVideo(videoUrl, false);
 
   await redisClient?.set(redisKey, JSON.stringify(videoData), {
-    EX: 60 * 60 * 24, // Cache for 24 hours
+    EX: 60 * 60 * 1, // Cache for 1 hours
   });
 
   if (!videoData?.url) {
