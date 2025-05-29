@@ -25,3 +25,7 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  redis-data:
+    driver: local
