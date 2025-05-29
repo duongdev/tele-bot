@@ -97,6 +97,19 @@ async function handleMessage(event: NewMessageEvent) {
         const videoPath = await downloadVideoFromTikTok(videoUrl[0]);
 
         let lastProgress = 0;
+        if (!videoPath) {
+          logger.error(
+            `Failed to download video from TikTok URL: ${videoUrl[0]}`
+          );
+          if (progressMessageId) {
+            await event._client?.editMessage(message.chat!, {
+              message: progressMessageId,
+              text: "Không thể tải video TikTok.",
+            });
+          }
+          return;
+        }
+
         await event._client?.sendFile(message.chat!, {
           file: videoPath,
           // caption: videoUrl[0],

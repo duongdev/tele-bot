@@ -60,9 +60,13 @@ async function sendVideoToChat(
   retries = MAX_RETRIES
 ) {
   const { videoUrl, client, chatId, replyToMessage } = args;
-  let videoPath: string | undefined;
+  let videoPath: string | null = null;
   try {
     videoPath = await downloadVideoFromTikTok(videoUrl);
+    if (!videoPath) {
+      logger.error(`Failed to download video from TikTok URL: ${videoUrl}`);
+      return;
+    }
     await client.sendFile(chatId, {
       file: videoPath,
       replyTo: replyToMessage,
@@ -102,7 +106,7 @@ async function sendVideoToChat(
 
 async function downloadVideoFromTikTok(url: string, retries = MAX_RETRIES) {
   try {
-    return await downloadVideo(url);
+    return await downloadVideo(url, retries < MAX_RETRIES);
   } catch (error) {
     if (retries > 0) {
       logger.warn(`Download failed, retrying... (${10 - retries + 1}/10)`);
