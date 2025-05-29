@@ -23,7 +23,6 @@ export async function handleTikTokUrlMessage(event: NewMessageEvent) {
 
     const tiktokUrls = extractTikTokUrl(text);
     if (tiktokUrls.length === 0) {
-      logger.warn("No TikTok URLs found in the message.");
       return;
     }
     logger.info(`Found TikTok URLs: ${tiktokUrls.join(", ")}`);
