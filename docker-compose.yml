@@ -1,9 +1,26 @@
 services:
   app:
     restart: unless-stopped
-    network_mode: host
+    networks:
+      - app-network
+    depends_on:
+      - redis
     build:
       context: .
       dockerfile: Dockerfile
     env_file:
       - .env
+    environment:
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./downloads:/app/downloads
+
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

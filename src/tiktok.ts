@@ -2,10 +2,21 @@ import fetch, { Headers } from "node-fetch";
 import { downloadMedia, getVideo } from "./lib/tiktok";
 import chalk from "chalk";
 import { existsSync } from "node:fs";
+import { getRedisClient } from "./lib/redis";
+import { logger } from "./lib/logger";
 
 export async function getVideoRedirectUrl(
   videoUrl: string
 ): Promise<string | null> {
+  const redisClient = await getRedisClient();
+  const redisKey = `tiktok:redirect:${videoUrl}`;
+  const cachedUrl = await redisClient?.get(redisKey);
+
+  if (cachedUrl) {
+    logger.debug(`Cache hit for TikTok URL: ${videoUrl} -> ${cachedUrl}`);
+    return cachedUrl;
+  }
+
   if (
     videoUrl.includes("vm.tiktok.com") ||
     videoUrl.includes("vt.tiktok.com")
@@ -14,13 +25,41 @@ export async function getVideoRedirectUrl(
       redirect: "follow",
       follow: 10,
     });
+
+    await redisClient?.set(redisKey, res.url, {
+      EX: 60 * 60 * 24, // Cache for 24 hours
+    });
+
     return res.url;
   }
+
+  await redisClient?.set(redisKey, videoUrl, {
+    EX: 60 * 60 * 24, // Cache for 24 hours
+  });
+  
   return videoUrl;
 }
 
 export async function getVideoData(videoUrl: string) {
+  const redisClient = await getRedisClient();
+  const redisKey = `tiktok:video-data:${videoUrl}`;
+  const cachedData = await redisClient?.get(redisKey);
+  if (cachedData) {
+    logger.debug(
+      `Cache hit for TikTok video data: ${videoUrl} -> ${cachedData}`
+    );
+    try {
+      return JSON.parse(cachedData);
+    } catch (error) {
+      logger.error(`Error parsing cached TikTok video data: ${error}`);
+    }
+  }
+
   const videoData = await getVideo(videoUrl, false);
+
+  await redisClient?.set(redisKey, JSON.stringify(videoData), {
+    EX: 60 * 60 * 24, // Cache for 24 hours
+  });
 
   if (!videoData?.url) {
     throw new Error("Unable to retrieve video URL.");

@@ -4,14 +4,16 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "npx tsx src/main.ts",
+    "start": "npx tsx src/runner.ts",
     "tiktok": "npx tsx src/tiktok.ts"
   },
   "author": "",
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@dotenvx/dotenvx": "^1.44.1",
     "@inquirer/prompts": "^7.5.3",
+    "@types/lodash": "^4.17.17",
     "chalk": "^5.4.1",
     "follow-redirects": "^1.15.9",
     "inquirer": "^6.5.2",
@@ -23,7 +25,8 @@
     "redis": "^5.1.1",
     "telegram": "^2.26.22",
     "tiktok-scraper": "^1.4.36",
-    "tsc": "^2.0.4"
+    "tsc": "^2.0.4",
+    "yn": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.23"
