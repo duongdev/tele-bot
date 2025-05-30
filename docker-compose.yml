@@ -1,8 +1,7 @@
 services:
   app:
+    container_name: telegram-bot
     restart: unless-stopped
-    networks:
-      - app-network
     depends_on:
       - redis
     build:
@@ -10,6 +9,8 @@ services:
       dockerfile: Dockerfile
     environment:
       - REDIS_URL=redis://redis:6379
+    env_file:
+      - stack.env
     volumes:
       - ./downloads:/app/downloads
       - .env:/app/.env
@@ -17,14 +18,8 @@ services:
   redis:
     image: redis:latest
     restart: unless-stopped
-    networks:
-      - app-network
     volumes:
       - redis-data:/data
-
-networks:
-  app-network:
-    driver: bridge
 
 volumes:
   redis-data:
