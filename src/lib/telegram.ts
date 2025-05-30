@@ -1,5 +1,5 @@
 import { input, password } from "@inquirer/prompts";
-import { TelegramClient } from "telegram";
+import { Api, TelegramClient } from "telegram";
 import { logger } from "./logger";
 import { StringSession } from "telegram/sessions";
 
@@ -51,4 +51,34 @@ export async function startTelegramClient() {
 
   logger.info("Telegram client started successfully.");
   return client;
+}
+
+export async function sendMessageReaction({
+  client,
+  chatId,
+  messageId,
+  reactions,
+  big,
+}: {
+  client: TelegramClient;
+  chatId: bigInt.BigInteger;
+  messageId: number;
+  reactions: Api.TypeReaction[];
+  big?: boolean;
+}) {
+  try {
+    await client.invoke(
+      new Api.messages.SendReaction({
+        peer: chatId,
+        msgId: messageId,
+        big: big,
+        reaction: reactions,
+      })
+    );
+  } catch (error) {
+    logger.error(
+      `Failed to send reactions to message ${messageId} in chat ${chatId}.`
+    );
+    console.error(error);
+  }
 }

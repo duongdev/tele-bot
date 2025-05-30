@@ -1,10 +1,12 @@
 import { NewMessageEvent } from "telegram/events";
 import { logger } from "../lib/logger";
-import { TelegramClient } from "telegram";
+import { Api, TelegramClient } from "telegram";
 import { downloadVideo } from "../tiktok";
 import { MessageIDLike } from "telegram/define";
 import { unlinkSync } from "node:fs";
 import uniq from "lodash/uniq";
+import { sendMessageReaction } from "../lib/telegram";
+import bigInt from "big-integer";
 
 const MAX_RETRIES = 10;
 
@@ -61,6 +63,17 @@ async function sendVideoToChat(
   const { videoUrl, client, chatId, replyToMessage } = args;
   let videoPath: string | null = null;
   try {
+    console.log({ chatId, replyToMessage });
+    await sendMessageReaction({
+      client,
+      chatId,
+      messageId: +(replyToMessage?.toString() || 0),
+      reactions: [
+        new Api.ReactionCustomEmoji({
+          documentId: bigInt("5406745015365943482"), // Custom emoji ID for "Downloading"
+        }),
+      ],
+    });
     videoPath = await downloadVideoFromTikTok(videoUrl);
     if (!videoPath) {
       logger.error(`Failed to download video from TikTok URL: ${videoUrl}`);
@@ -77,6 +90,17 @@ async function sendVideoToChat(
     } catch (error) {
       logger.error(`Error deleting video file: ${error}`);
     }
+
+    await sendMessageReaction({
+      client,
+      chatId,
+      messageId: +(replyToMessage?.toString() || 0),
+      reactions: [
+        new Api.ReactionCustomEmoji({
+          documentId: bigInt("5206607081334906820"), // Custom emoji ID for "Done"
+        }),
+      ],
+    });
   } catch (error) {
     logger.error(`Error sending video to chat`);
     console.error(error);
@@ -99,6 +123,16 @@ async function sendVideoToChat(
       return sendVideoToChat(args, retries - 1);
     } else {
       logger.error("Failed to send video after multiple attempts.");
+      await sendMessageReaction({
+        client,
+        chatId,
+        messageId: +(replyToMessage?.toString() || 0),
+        reactions: [
+          new Api.ReactionCustomEmoji({
+            documentId: bigInt("5343968063970632884"), // Custom emoji ID for "Error"
+          }),
+        ],
+      });
     }
   }
 }
