@@ -5,6 +5,7 @@ import { config } from "@dotenvx/dotenvx";
 
 (async () => {
   config();
+  console.log("[tele-bot] Starting v2 (cobalt integration)");
   const client = await startTelegramClient();
 
   // Add event handler for new messages

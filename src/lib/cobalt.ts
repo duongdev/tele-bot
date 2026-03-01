@@ -1,6 +1,6 @@
 import { logger } from "./logger";
 import { randomUUID } from "node:crypto";
-import { createWriteStream, existsSync, mkdirSync } from "node:fs";
+import { createWriteStream, existsSync, mkdirSync, statSync } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { join } from "node:path";
@@ -101,7 +101,13 @@ async function downloadFromUrl(
   const fileStream = createWriteStream(filePath);
   await pipeline(Readable.fromWeb(response.body as any), fileStream);
 
-  logger.info(`Downloaded: ${filePath}`);
+  const fileSizeMB = statSync(filePath).size / (1024 * 1024);
+  logger.info(`Downloaded: ${filePath} (${fileSizeMB.toFixed(1)} MB)`);
+
+  if (fileSizeMB > 2000) {
+    throw new Error(`File too large for Telegram: ${fileSizeMB.toFixed(0)} MB`);
+  }
+
   return {
     filePath,
     filename: safeName,
