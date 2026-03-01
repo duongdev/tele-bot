@@ -6,6 +6,7 @@ import bigInt from "big-integer";
 import { logger } from "../lib/logger";
 import { sendMessageReaction } from "../lib/telegram";
 import { downloadMedia, DownloadResult } from "../lib/cobalt";
+import { downloadWithYtDlp } from "../lib/ytdlp";
 import { extractMediaUrls } from "../config/supported-services";
 
 const MAX_RETRIES = 5;
@@ -59,7 +60,10 @@ async function sendMediaToChat(
       await setReaction(client, chatId, replyToMessage, REACTION_DOWNLOADING);
     }
 
-    const results = await downloadMedia(url);
+    const isYouTube = /(?:youtube\.com|youtu\.be|music\.youtube\.com)/.test(url);
+    const results = isYouTube
+      ? [await downloadWithYtDlp(url)]
+      : await downloadMedia(url);
     downloadedFiles.push(...results.map((r) => r.filePath));
 
     for (let i = 0; i < results.length; i++) {
