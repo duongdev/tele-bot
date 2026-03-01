@@ -34,6 +34,7 @@ services:
       - API_URL=http://cobalt:9000
       - YOUTUBE_SESSION_SERVER=http://yt-session-generator:8080/token
       - YOUTUBE_SESSION_INNERTUBE_CLIENT=WEB_EMBEDDED
+      - CUSTOM_INNERTUBE_CLIENT=IOS
     depends_on:
       - yt-session-generator
 

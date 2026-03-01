@@ -65,6 +65,7 @@ export async function fetchCobalt(url: string): Promise<CobaltResponse> {
       videoQuality: "1080",
       audioFormat: "mp3",
       filenameStyle: "pretty",
+      youtubeHLS: true,
     }),
   });
 
