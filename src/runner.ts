@@ -1,6 +1,6 @@
 import { NewMessage, NewMessageEvent } from "telegram/events";
 import { startTelegramClient } from "./lib/telegram";
-import { handleTikTokUrlMessage } from "./handlers/handle-tiktok-url-message";
+import { handleMediaUrlMessage } from "./handlers/handle-media-url-message";
 import { config } from "@dotenvx/dotenvx";
 
 (async () => {
@@ -12,5 +12,5 @@ import { config } from "@dotenvx/dotenvx";
 })();
 
 async function handleMessage(event: NewMessageEvent) {
-  await Promise.all([handleTikTokUrlMessage(event)]);
+  await Promise.all([handleMediaUrlMessage(event)]);
 }
