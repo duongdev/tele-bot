@@ -26,6 +26,8 @@ services:
     restart: unless-stopped
     init: true
     read_only: true
+    tmpfs:
+      - /tmp
     networks:
       - app-network
     environment:
