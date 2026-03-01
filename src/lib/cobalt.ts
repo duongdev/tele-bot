@@ -40,10 +40,17 @@ type CobaltResponse =
   | CobaltPickerResponse
   | CobaltErrorResponse;
 
+export interface VideoMeta {
+  width: number;
+  height: number;
+  duration: number;
+}
+
 export interface DownloadResult {
   filePath: string;
   filename: string;
   isAudio: boolean;
+  videoMeta?: VideoMeta;
 }
 
 // ---- API ----

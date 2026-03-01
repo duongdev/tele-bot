@@ -67,11 +67,23 @@ async function sendMediaToChat(
     downloadedFiles.push(...results.map((r) => r.filePath));
 
     for (let i = 0; i < results.length; i++) {
-      await client.sendFile(chatId, {
-        file: results[i].filePath,
+      const r = results[i];
+      const sendOpts: any = {
+        file: r.filePath,
         replyTo: i === 0 ? replyToMessage : undefined,
-        supportsStreaming: !results[i].isAudio,
-      });
+        supportsStreaming: !r.isAudio,
+      };
+      if (r.videoMeta) {
+        sendOpts.attributes = [
+          new Api.DocumentAttributeVideo({
+            w: r.videoMeta.width,
+            h: r.videoMeta.height,
+            duration: r.videoMeta.duration,
+            supportsStreaming: true,
+          }),
+        ];
+      }
+      await client.sendFile(chatId, sendOpts);
     }
 
     cleanupFiles(downloadedFiles);

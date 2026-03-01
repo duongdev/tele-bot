@@ -4,6 +4,7 @@ import { existsSync, mkdirSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { logger } from "./logger";
+import { probeVideo } from "./ffprobe";
 import type { DownloadResult } from "./cobalt";
 
 const execFileAsync = promisify(execFile);
@@ -66,6 +67,7 @@ export async function downloadWithYtDlp(url: string): Promise<DownloadResult> {
   }
 
   const isAudio = /\.(mp3|ogg|wav|opus|m4a|flac|aac)$/i.test(filename);
+  const videoMeta = isAudio ? undefined : await probeVideo(filePath);
 
-  return { filePath, filename, isAudio };
+  return { filePath, filename, isAudio, videoMeta };
 }
