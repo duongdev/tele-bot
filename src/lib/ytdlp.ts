@@ -18,7 +18,7 @@ export async function downloadWithYtDlp(url: string): Promise<DownloadResult> {
   const outputTemplate = join(DOWNLOADS_DIR, `${id}.%(ext)s`);
 
   const args = [
-    "-f", "bv*[height<=1080]+ba/b[height<=1080]/b",
+    "-f", "bv*[height<=1080][vcodec~='^(avc|h264)']+ba/bv*[height<=1080]+ba/b[height<=1080]/b",
     "--merge-output-format", "mp4",
     "-o", outputTemplate,
     "--no-playlist",
