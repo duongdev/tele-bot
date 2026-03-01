@@ -76,9 +76,7 @@ export async function fetchCobalt(url: string): Promise<CobaltResponse> {
     }),
   });
 
-  const data = (await response.json()) as CobaltResponse;
-  logger.info(`Cobalt response for ${url}: ${JSON.stringify(data)}`);
-  return data;
+  return (await response.json()) as CobaltResponse;
 }
 
 // ---- Download ----
@@ -103,19 +101,15 @@ async function downloadFromUrl(
   const safeName = filename || `${randomUUID()}.mp4`;
   const filePath = join(DOWNLOADS_DIR, safeName);
 
-  logger.info(`Downloading from: ${downloadUrl}`);
   const response = await fetch(downloadUrl);
   if (!response.ok || !response.body) {
     throw new Error(`Download failed: ${response.status} ${response.statusText}`);
   }
-  logger.info(`Download response: ${response.status}, content-length: ${response.headers.get("content-length")}`);
 
   const fileStream = createWriteStream(filePath);
   await pipeline(Readable.fromWeb(response.body as any), fileStream);
 
   const fileSize = statSync(filePath).size;
-  const fileSizeMB = fileSize / (1024 * 1024);
-  logger.info(`Downloaded: ${filePath} (${fileSizeMB.toFixed(1)} MB)`);
 
   if (fileSize === 0) {
     throw new Error(`Downloaded file is empty: ${downloadUrl}`);
