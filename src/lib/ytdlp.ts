@@ -18,12 +18,11 @@ export async function downloadWithYtDlp(url: string): Promise<DownloadResult> {
   const outputTemplate = join(DOWNLOADS_DIR, `${id}.%(ext)s`);
 
   const args = [
-    "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+    "-f", "bv*[height<=1080]+ba/b[height<=1080]/b",
     "--merge-output-format", "mp4",
     "-o", outputTemplate,
     "--no-playlist",
-    "--no-warnings",
-    "--no-progress",
+    "--verbose",
   ];
 
   const proxy = process.env.PROXY;
@@ -34,11 +33,16 @@ export async function downloadWithYtDlp(url: string): Promise<DownloadResult> {
   args.push(url);
 
   logger.info(`yt-dlp downloading: ${url}`);
+  logger.info(`yt-dlp args: ${args.join(" ")}`);
   const { stdout, stderr } = await execFileAsync("yt-dlp", args, {
     timeout: 300_000, // 5 min
+    maxBuffer: 10 * 1024 * 1024, // 10MB buffer for verbose output
   });
+  if (stdout) {
+    logger.info(`yt-dlp stdout: ${stdout.slice(-2000)}`);
+  }
   if (stderr) {
-    logger.warn(`yt-dlp stderr: ${stderr}`);
+    logger.warn(`yt-dlp stderr: ${stderr.slice(-2000)}`);
   }
 
   // Find the output file (yt-dlp determines the extension)
