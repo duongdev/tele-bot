@@ -115,8 +115,8 @@ async function downloadFromUrl(
     throw new Error(`Downloaded file is empty: ${downloadUrl}`);
   }
 
-  if (fileSizeMB > 2000) {
-    throw new Error(`File too large for Telegram: ${fileSizeMB.toFixed(0)} MB`);
+  if (fileSize > 2000 * 1024 * 1024) {
+    throw new Error(`File too large for Telegram: ${(fileSize / (1024 * 1024)).toFixed(0)} MB`);
   }
 
   const isAudio = isAudioFile(safeName);
