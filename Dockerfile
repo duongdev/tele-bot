@@ -1,6 +1,10 @@
 FROM node:22
 
-RUN apt-get update && apt-get install -y build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev
+# Install yt-dlp and ffmpeg for YouTube downloads
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg python3 pipx && \
+    pipx install yt-dlp && \
+    ln -s /root/.local/bin/yt-dlp /usr/local/bin/yt-dlp && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /app
@@ -8,6 +12,8 @@ WORKDIR /app
 COPY package*.json ./
 # Install dependencies
 RUN npm install
+# Create downloads directory
+RUN mkdir -p downloads
 
 # Copy the rest of the application code
 COPY . .

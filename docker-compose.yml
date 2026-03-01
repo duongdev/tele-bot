@@ -5,6 +5,7 @@ services:
       - app-network
     depends_on:
       - redis
+      - cobalt
     build:
       context: .
       dockerfile: Dockerfile
@@ -14,8 +15,23 @@ services:
       - API_ID=${API_ID}
       - API_HASH=${API_HASH}
       - PROXY=${PROXY:-}
+      - COBALT_API_URL=http://cobalt:9000
+      - COBALT_API_KEY=${COBALT_API_KEY:-}
+      - SUPPORTED_SERVICES=${SUPPORTED_SERVICES:-}
     volumes:
       - downloads:/app/downloads
+
+  cobalt:
+    image: ghcr.io/imputnet/cobalt:11
+    restart: unless-stopped
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    networks:
+      - app-network
+    environment:
+      - API_URL=http://cobalt:9000
 
   redis:
     image: redis:latest
