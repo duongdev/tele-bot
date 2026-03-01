@@ -10,9 +10,12 @@ services:
       dockerfile: Dockerfile
     environment:
       - REDIS_URL=redis://redis:6379
+      - STRING_SESSION=${STRING_SESSION}
+      - API_ID=${API_ID}
+      - API_HASH=${API_HASH}
+      - PROXY=${PROXY:-}
     volumes:
-      - ./downloads:/app/downloads
-      - .env:/app/.env
+      - downloads:/app/downloads
 
   redis:
     image: redis:latest
@@ -28,4 +31,6 @@ networks:
 
 volumes:
   redis-data:
+    driver: local
+  downloads:
     driver: local
