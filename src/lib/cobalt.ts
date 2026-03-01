@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { probeVideo } from "./ffprobe";
 import { randomUUID } from "node:crypto";
 import { createWriteStream, existsSync, mkdirSync, statSync } from "node:fs";
 import { pipeline } from "node:stream/promises";
@@ -124,10 +125,14 @@ async function downloadFromUrl(
     throw new Error(`File too large for Telegram: ${fileSizeMB.toFixed(0)} MB`);
   }
 
+  const isAudio = isAudioFile(safeName);
+  const videoMeta = isAudio ? undefined : await probeVideo(filePath);
+
   return {
     filePath,
     filename: safeName,
-    isAudio: isAudioFile(safeName),
+    isAudio,
+    videoMeta,
   };
 }
 
