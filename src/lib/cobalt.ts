@@ -100,6 +100,11 @@ function isAudioFile(filename: string): boolean {
   return /\.(mp3|ogg|wav|opus|m4a|flac|aac)$/i.test(filename);
 }
 
+function extFromFilename(filename: string): string {
+  const match = filename.match(/\.[a-zA-Z0-9]+$/);
+  return match ? match[0] : ".mp4";
+}
+
 async function downloadFromUrl(
   downloadUrl: string,
   filename?: string
@@ -141,7 +146,8 @@ export async function downloadMedia(url: string): Promise<DownloadResult[]> {
   }
 
   if (cobaltResponse.status === "tunnel" || cobaltResponse.status === "redirect") {
-    const result = await downloadFromUrl(cobaltResponse.url, cobaltResponse.filename);
+    const ext = extFromFilename(cobaltResponse.filename);
+    const result = await downloadFromUrl(cobaltResponse.url, `${randomUUID()}${ext}`);
     return [result];
   }
 

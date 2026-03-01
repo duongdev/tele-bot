@@ -51,10 +51,13 @@ async function sendMediaToChat(
   retries = MAX_RETRIES
 ) {
   const { url, client, chatId, replyToMessage } = args;
+  const isFirstAttempt = retries === MAX_RETRIES;
   const downloadedFiles: string[] = [];
 
   try {
-    await setReaction(client, chatId, replyToMessage, REACTION_DOWNLOADING);
+    if (isFirstAttempt) {
+      await setReaction(client, chatId, replyToMessage, REACTION_DOWNLOADING);
+    }
 
     const results = await downloadMedia(url);
     downloadedFiles.push(...results.map((r) => r.filePath));
