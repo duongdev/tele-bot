@@ -1,6 +1,5 @@
-import { getRedisClient } from "./redis";
 import { logger } from "./logger";
-import { createHash, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { createWriteStream, existsSync, mkdirSync } from "node:fs";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
@@ -9,7 +8,6 @@ import { join } from "node:path";
 const COBALT_API_URL = process.env.COBALT_API_URL || "http://cobalt:9000";
 const COBALT_API_KEY = process.env.COBALT_API_KEY || "";
 const DOWNLOADS_DIR = "downloads";
-const CACHE_TTL_SECONDS = 300; // 5 minutes
 
 // ---- Types ----
 
@@ -51,19 +49,6 @@ export interface DownloadResult {
 // ---- API ----
 
 export async function fetchCobalt(url: string): Promise<CobaltResponse> {
-  const redisClient = await getRedisClient();
-  const cacheKey = `cobalt:response:${createHash("sha256").update(url).digest("hex")}`;
-
-  const cached = await redisClient?.get(cacheKey);
-  if (cached) {
-    logger.debug(`Cobalt cache hit for: ${url}`);
-    try {
-      return JSON.parse(cached);
-    } catch {
-      // ignore bad cache
-    }
-  }
-
   const headers: Record<string, string> = {
     Accept: "application/json",
     "Content-Type": "application/json",
@@ -83,15 +68,7 @@ export async function fetchCobalt(url: string): Promise<CobaltResponse> {
     }),
   });
 
-  const data = (await response.json()) as CobaltResponse;
-
-  if (data.status !== "error") {
-    await redisClient?.set(cacheKey, JSON.stringify(data), {
-      EX: CACHE_TTL_SECONDS,
-    });
-  }
-
-  return data;
+  return (await response.json()) as CobaltResponse;
 }
 
 // ---- Download ----
