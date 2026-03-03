@@ -1,5 +1,5 @@
 import { logger } from "./logger";
-import { probeVideo } from "./ffprobe";
+import { probeVideo, downloadThumbnail } from "./ffprobe";
 import { randomUUID } from "node:crypto";
 import { createWriteStream, existsSync, mkdirSync, statSync } from "node:fs";
 import { pipeline } from "node:stream/promises";
@@ -52,6 +52,7 @@ export interface DownloadResult {
   filename: string;
   isAudio: boolean;
   videoMeta?: VideoMeta;
+  thumbPath?: string;
 }
 
 // ---- API ----
@@ -156,6 +157,18 @@ export async function downloadMedia(url: string): Promise<DownloadResult[]> {
       const ext = item.type === "photo" ? ".jpg" : ".mp4";
       const filename = `${randomUUID()}${ext}`;
       const result = await downloadFromUrl(item.url, filename);
+
+      if (item.thumb && !result.isAudio) {
+        try {
+          const thumbPath = await downloadThumbnail(item.thumb);
+          if (thumbPath) {
+            result.thumbPath = thumbPath;
+          }
+        } catch (error) {
+          logger.warn(`Failed to download picker thumbnail: ${error}`);
+        }
+      }
+
       results.push(result);
     }
     return results;

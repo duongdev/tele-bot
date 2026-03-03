@@ -7,6 +7,7 @@ import { logger } from "../lib/logger";
 import { sendMessageReaction } from "../lib/telegram";
 import { downloadMedia, DownloadResult } from "../lib/cobalt";
 import { downloadWithYtDlp } from "../lib/ytdlp";
+import { generateThumbnail } from "../lib/ffprobe";
 import { extractMediaUrls } from "../config/supported-services";
 
 const MAX_RETRIES = 5;
@@ -20,6 +21,10 @@ export async function handleMediaUrlMessage(event: NewMessageEvent) {
   try {
     const { text, chatId, client } = event.message;
     if (!text || !chatId || !client) return;
+
+    // Skip bot conversations (but not Saved Messages)
+    const chat = await event.message.getChat();
+    if (chat instanceof Api.User && chat.bot) return;
 
     const mediaUrls = extractMediaUrls(text);
     if (mediaUrls.length === 0) return;
@@ -65,6 +70,10 @@ async function sendMediaToChat(
       ? [await downloadWithYtDlp(url)]
       : await downloadMedia(url);
     downloadedFiles.push(...results.map((r) => r.filePath));
+    // Track service-provided thumbnails for cleanup on failure
+    for (const r of results) {
+      if (r.thumbPath) downloadedFiles.push(r.thumbPath);
+    }
 
     for (let i = 0; i < results.length; i++) {
       const r = results[i];
@@ -82,6 +91,15 @@ async function sendMediaToChat(
             supportsStreaming: true,
           }),
         ];
+        // Prefer service-provided thumbnail, fall back to ffmpeg
+        const thumbPath = r.thumbPath ?? (await generateThumbnail(r.filePath));
+        if (thumbPath) {
+          sendOpts.thumb = thumbPath;
+          // ffmpeg-generated thumbnails need tracking (service ones already tracked above)
+          if (!r.thumbPath) {
+            downloadedFiles.push(thumbPath);
+          }
+        }
       }
       await client.sendFile(chatId, sendOpts);
     }
