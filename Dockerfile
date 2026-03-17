@@ -3,6 +3,7 @@ FROM node:22
 # Install yt-dlp and ffmpeg for YouTube downloads
 RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg python3 pipx && \
     pipx install yt-dlp && \
+    pipx upgrade yt-dlp && \
     ln -s /root/.local/bin/yt-dlp /usr/local/bin/yt-dlp && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
