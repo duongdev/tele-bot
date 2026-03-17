@@ -19,4 +19,5 @@ RUN mkdir -p downloads
 # Copy the rest of the application code
 COPY . .
 # Start the application
-CMD ["npm", "start"]
+# Cleanup stale downloads on start + update yt-dlp
+CMD ["bash", "-c", "find downloads -type f -mmin +60 -delete 2>/dev/null; pipx upgrade yt-dlp 2>/dev/null || true; npm start"]
