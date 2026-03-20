@@ -7,6 +7,7 @@ import { logger } from "../lib/logger";
 import { sendMessageReaction } from "../lib/telegram";
 import { downloadMedia, DownloadResult } from "../lib/cobalt";
 import { downloadWithYtDlp } from "../lib/ytdlp";
+import { downloadTikTok } from "../lib/tiktok-api";
 import { generateThumbnail } from "../lib/ffprobe";
 import { extractMediaUrls } from "../config/supported-services";
 
@@ -16,6 +17,33 @@ const RETRY_DELAY_MS = 3000;
 const REACTION_DOWNLOADING = bigInt("5406745015365943482");
 const REACTION_DONE = bigInt("5206607081334906820");
 const REACTION_ERROR = bigInt("5343968063970632884");
+
+function isTikTokUrl(url: string): boolean {
+  return /(?:tiktok\.com)/.test(url);
+}
+
+function isYouTubeUrl(url: string): boolean {
+  return /(?:youtube\.com|youtu\.be|music\.youtube\.com)/.test(url);
+}
+
+async function downloadByPlatform(url: string): Promise<DownloadResult[]> {
+  if (isYouTubeUrl(url)) {
+    return [await downloadWithYtDlp(url)];
+  }
+
+  if (isTikTokUrl(url)) {
+    // Try TikTok Android API first (more reliable), fall back to Cobalt
+    try {
+      return await downloadTikTok(url);
+    } catch (err) {
+      logger.warn(`TikTok API failed, falling back to Cobalt: ${err}`);
+      return await downloadMedia(url);
+    }
+  }
+
+  // All other platforms: Cobalt
+  return await downloadMedia(url);
+}
 
 export async function handleMediaUrlMessage(event: NewMessageEvent) {
   try {
@@ -65,12 +93,8 @@ async function sendMediaToChat(
       await setReaction(client, chatId, replyToMessage, REACTION_DOWNLOADING);
     }
 
-    const isYouTube = /(?:youtube\.com|youtu\.be|music\.youtube\.com)/.test(url);
-    const results = isYouTube
-      ? [await downloadWithYtDlp(url)]
-      : await downloadMedia(url);
+    const results = await downloadByPlatform(url);
     downloadedFiles.push(...results.map((r) => r.filePath));
-    // Track service-provided thumbnails for cleanup on failure
     for (const r of results) {
       if (r.thumbPath) downloadedFiles.push(r.thumbPath);
     }
@@ -91,11 +115,9 @@ async function sendMediaToChat(
             supportsStreaming: true,
           }),
         ];
-        // Prefer service-provided thumbnail, fall back to ffmpeg
         const thumbPath = r.thumbPath ?? (await generateThumbnail(r.filePath));
         if (thumbPath) {
           sendOpts.thumb = thumbPath;
-          // ffmpeg-generated thumbnails need tracking (service ones already tracked above)
           if (!r.thumbPath) {
             downloadedFiles.push(thumbPath);
           }
