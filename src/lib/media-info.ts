@@ -1,9 +1,10 @@
 import { logger } from "./logger";
 
-interface MediaInfo {
+export interface MediaInfo {
   title?: string;
   description?: string;
   author?: string;
+  platform?: string;
 }
 
 /**
@@ -29,6 +30,7 @@ export async function fetchMediaInfo(url: string): Promise<MediaInfo> {
       title: data.title || data.fulltitle || undefined,
       description: data.description?.substring(0, 500) || undefined,
       author: data.uploader || data.channel || data.creator || undefined,
+      platform: data.extractor_key || data.extractor || undefined,
     };
   } catch (err) {
     logger.debug(`fetchMediaInfo failed (non-critical): ${err}`);
@@ -38,12 +40,32 @@ export async function fetchMediaInfo(url: string): Promise<MediaInfo> {
 
 /**
  * Build a Telegram caption from media info.
+ * Uses description for social media (Instagram, TikTok, Twitter)
+ * where title is generic ("Video by username").
  * Returns undefined if no useful info available.
  */
 export function buildCaption(info: MediaInfo, url: string): string | undefined {
   const parts: string[] = [];
 
-  if (info.title) {
+  // Social platforms: prefer description over title (title is often generic)
+  const socialPlatforms = ["Instagram", "TikTok", "Twitter"];
+  const isSocial = socialPlatforms.some(
+    (p) => info.platform?.toLowerCase().includes(p.toLowerCase())
+  );
+
+  if (isSocial && info.description) {
+    // Use description, strip excessive hashtags at the end
+    let desc = info.description.trim();
+    // Keep first line or up to 300 chars of description
+    const firstLine = desc.split("\n")[0];
+    if (firstLine.length > 10) {
+      desc = firstLine;
+    }
+    if (desc.length > 300) {
+      desc = desc.substring(0, 297) + "...";
+    }
+    parts.push(desc);
+  } else if (info.title) {
     parts.push(info.title);
   }
 
