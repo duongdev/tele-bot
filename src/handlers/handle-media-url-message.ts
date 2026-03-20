@@ -10,8 +10,9 @@ import { downloadWithYtDlp } from "../lib/ytdlp";
 import { downloadTikTok } from "../lib/tiktok-api";
 import { generateThumbnail } from "../lib/ffprobe";
 import { extractMediaUrls } from "../config/supported-services";
+import { fetchMediaInfo, buildCaption } from "../lib/media-info";
 
-const MAX_RETRIES = 5;
+const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 3000;
 
 const REACTION_DOWNLOADING = bigInt("5406745015365943482");
@@ -26,23 +27,34 @@ function isYouTubeUrl(url: string): boolean {
   return /(?:youtube\.com|youtu\.be|music\.youtube\.com)/.test(url);
 }
 
+/**
+ * Download media with platform-specific handlers and universal yt-dlp fallback.
+ * Priority: platform-specific -> Cobalt -> yt-dlp (last resort)
+ */
 async function downloadByPlatform(url: string): Promise<DownloadResult[]> {
+  // YouTube: yt-dlp only (best support)
   if (isYouTubeUrl(url)) {
     return [await downloadWithYtDlp(url)];
   }
 
+  // TikTok: Android API -> Cobalt -> yt-dlp
   if (isTikTokUrl(url)) {
-    // Try TikTok Android API first (more reliable), fall back to Cobalt
     try {
       return await downloadTikTok(url);
     } catch (err) {
-      logger.warn(`TikTok API failed, falling back to Cobalt: ${err}`);
-      return await downloadMedia(url);
+      logger.warn(`TikTok API failed: ${err}`);
     }
   }
 
-  // All other platforms: Cobalt
-  return await downloadMedia(url);
+  // All other platforms (+ TikTok fallback): Cobalt -> yt-dlp
+  try {
+    return await downloadMedia(url);
+  } catch (err) {
+    logger.warn(`Cobalt failed, trying yt-dlp fallback: ${err}`);
+  }
+
+  // Last resort: yt-dlp (supports many platforms)
+  return [await downloadWithYtDlp(url)];
 }
 
 export async function handleMediaUrlMessage(event: NewMessageEvent) {
@@ -93,7 +105,15 @@ async function sendMediaToChat(
       await setReaction(client, chatId, replyToMessage, REACTION_DOWNLOADING);
     }
 
-    const results = await downloadByPlatform(url);
+    // Fetch media info (caption) and download in parallel
+    // Media info is best-effort — never blocks or fails the download
+    const [results, mediaInfo] = await Promise.all([
+      downloadByPlatform(url),
+      fetchMediaInfo(url).catch(() => ({})),
+    ]);
+
+    const caption = buildCaption(mediaInfo, url);
+
     downloadedFiles.push(...results.map((r) => r.filePath));
     for (const r of results) {
       if (r.thumbPath) downloadedFiles.push(r.thumbPath);
@@ -106,6 +126,12 @@ async function sendMediaToChat(
         replyTo: i === 0 ? replyToMessage : undefined,
         supportsStreaming: !r.isAudio,
       };
+
+      // Add caption to first item only
+      if (i === 0 && caption) {
+        sendOpts.caption = caption;
+      }
+
       if (r.videoMeta) {
         sendOpts.attributes = [
           new Api.DocumentAttributeVideo({
